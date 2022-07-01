@@ -102,36 +102,6 @@
                   maturinBuildHook
                 ]);
             });
-          orjson = pyprev.orjson.overridePythonAttrs (old: let
-            inherit (old) pname version;
-            src = fetchFromGitHub {
-              owner = "ijl";
-              repo = "orjson";
-              rev = version;
-              sha256 = "sha256-N0PbBU4PRqR2CAd5Ndm+vabQfaSXHBxAATwRuC+5peo=";
-            };
-          in
-            with pkgs; {
-              inherit src;
-              format = "pyproject";
-              cargoDeps = rustPlatform.fetchCargoTarball {
-                inherit src;
-                name = "${pname}-${version}";
-                sha256 = "sha256-IXwz8BleoDSnf4EKZJPpHHHUxnbjUhKcIPG2QzDha54=";
-              };
-              buildInputs =
-                (old.buildInputs or [])
-                ++ lib.optionals stdenv.isDarwin [
-                  libiconv
-                  stdenv.cc.cc.lib
-                ];
-              nativeBuildInputs =
-                (old.nativeBuildInputs or [])
-                ++ (with rustPlatform; [
-                  cargoSetupHook
-                  maturinBuildHook
-                ]);
-            });
         });
       };
     in {

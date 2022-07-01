@@ -1,8 +1,22 @@
+import sys
+
+import torch
 from torch.nn.functional import log_softmax
 from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from .model import CompletionParams, get_hf_params
+
+
+def sanitize_float(x: float) -> float:
+    """Sanitize floats to that they are JSON compatibles
+    (e.g. inf and -inf are not valid JSON)"""
+    if x == float("inf"):
+        return sys.float_info.max
+    elif x == float("-inf"):
+        return -sys.float_info.max
+    else:
+        return x
 
 
 class ModelService:
@@ -29,11 +43,11 @@ class ModelService:
             token_logprobs = []
             for t_id, s in zip(token_ids, response.scores[response_start:]):  # type: ignore
                 lps = log_softmax(s[0], dim=-1)
-                token_logprobs.append(lps[t_id].item())
+                token_logprobs.append(sanitize_float(lps[t_id].item()))
                 lps, token_ids = lps.topk(params.logprobs)
                 top_logprobs.append(
                     {
-                        self.tokenizer.decode(t): l
+                        self.tokenizer.decode(t): sanitize_float(l)
                         for t, l in zip(token_ids, lps.tolist())
                     }
                 )
@@ -42,5 +56,4 @@ class ModelService:
                 token_logprobs=token_logprobs,
                 top_logprobs=top_logprobs,
             )
-            print(result)
         return result

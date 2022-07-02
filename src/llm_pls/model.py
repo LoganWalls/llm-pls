@@ -1,6 +1,5 @@
-from dataclasses import dataclass
 from itertools import chain
-from typing import List, Mapping, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
 from pydantic import BaseModel
@@ -25,13 +24,14 @@ class CompletionParams(BaseModel):
     max_tokens: int = 16
     temperature: float = 1.0
     top_p: float = 1.0
-    n: int = 1
+    # n: int = 1
     logprobs: Optional[int] = None
     stop: Optional[Union[List[str], str]] = None
     # presence_penalty: float = 0.0
     # frequency_penalty: float = 0.0
-    best_of: int = 1
+    # best_of: int = 1
     # logit_bias: Optional[Mapping[str, float]] = None
+    seed: Optional[int] = None
 
 
 class TokenStoppingCriteria(StoppingCriteria):
@@ -69,9 +69,9 @@ def get_hf_params(params: CompletionParams, tokenizer: PreTrainedTokenizer) -> d
         do_sample=params.temperature > 0.0,
         top_p=params.top_p,
         top_k=None,
-        num_return_sequences=params.n,
+        # num_return_sequences=params.n,
         output_scores=bool(params.logprobs),
-        num_beams=params.best_of,
+        # num_beams=params.best_of,
     )
     if params.stop:
         hf_params["stopping_criteria"] = get_stopping_criteria(params.stop, tokenizer)  # type: ignore

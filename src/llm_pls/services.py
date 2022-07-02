@@ -1,6 +1,6 @@
 import sys
 
-import torch
+from accelerate.utils import set_seed
 from torch.nn.functional import log_softmax
 from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils import PreTrainedTokenizer
@@ -28,6 +28,8 @@ class ModelService:
 
     def generate_completion(self, params: CompletionParams) -> dict:
         hf_params = get_hf_params(params, self.tokenizer)
+        if params.seed is not None:
+            set_seed(params.seed)
         response = self.model.generate(
             pad_token_id=self.tokenizer.eos_token_id,
             return_dict_in_generate=True,

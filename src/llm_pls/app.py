@@ -1,9 +1,9 @@
 from fastapi import APIRouter, FastAPI
-from fastapi.responses import JSONResponse
 
+from . import config
 from .model import load_model
 
-model, tokenizer = load_model("gpt2")
+model, tokenizer = load_model(config.model_name)
 
 from .views import api_router
 

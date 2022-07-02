@@ -5,6 +5,7 @@ from torch.nn.functional import log_softmax
 from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils import PreTrainedTokenizer
 
+from . import config
 from .model import CompletionParams, get_hf_params
 
 
@@ -23,7 +24,7 @@ class ModelService:
     def __init__(self, model: PreTrainedModel, tokenizer: PreTrainedTokenizer):
         self.model = model
         self.tokenizer = tokenizer
-        self.device = "cpu"
+        self.device = config.input_device
 
     def generate_completion(self, params: CompletionParams) -> dict:
         hf_params = get_hf_params(params, self.tokenizer)

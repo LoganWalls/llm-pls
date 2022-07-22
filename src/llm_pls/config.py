@@ -1,3 +1,4 @@
+port = 8081
 model_name = "bigscience/bloom"
 input_device = 0
 debug = False

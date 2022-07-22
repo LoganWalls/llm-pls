@@ -8,6 +8,8 @@ if model_device.isnumeric():
     model_device = int(model_device)
 
 input_device = 0 if model_device == "auto" else model_device
+fast_tokenizer = bool(int(os.getenv("LLMPLS_FAST_TOKENIZER", 1)))
+
 debug = bool(os.getenv("LLMPLS_DEBUG", False))
 
 if debug:

@@ -81,7 +81,10 @@ def get_hf_params(params: CompletionParams, tokenizer: PreTrainedTokenizer) -> d
 def load_model(model_name: str) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     kwargs = dict()
-    if config.input_device != "cpu":
+    if config.model_device == "auto":
         kwargs = dict(device_map="auto", torch_dtype=torch.float16)
     model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
+    # Place on specific GPU if needed
+    if config.model_device != "auto":
+        model = model.to(config.model_device)
     return model, tokenizer

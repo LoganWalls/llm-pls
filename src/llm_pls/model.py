@@ -27,6 +27,7 @@ class CompletionParams(BaseModel):
     # n: int = 1
     logprobs: Optional[int] = None
     stop: Optional[Union[List[str], str]] = None
+    echo: bool = False
     # presence_penalty: float = 0.0
     # frequency_penalty: float = 0.0
     # best_of: int = 1
@@ -79,7 +80,9 @@ def get_hf_params(params: CompletionParams, tokenizer: PreTrainedTokenizer) -> d
 
 
 def load_model(model_name: str) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=config.fast_tokenizer)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name, use_fast=config.fast_tokenizer
+    )
     kwargs = dict()
     if config.model_device == "auto":
         kwargs = dict(device_map="auto", torch_dtype=torch.float16)

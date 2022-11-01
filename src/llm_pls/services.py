@@ -1,5 +1,6 @@
 import sys
 
+import torch
 from accelerate.utils import set_seed
 from torch.nn.functional import log_softmax
 from transformers.modeling_utils import PreTrainedModel
@@ -35,25 +36,43 @@ class ModelService:
             return_dict_in_generate=True,
             **hf_params
         )
-        # Remove the prompt from the response
-        response_start = hf_params["inputs"].size(1)
+
+        if params.echo and params.logprobs:
+            token_ids = response.sequences[0].tolist()  # type: ignore
+            # Get the logits for the prompt
+            # TODO: can this be done without a second pass through the model?
+            prompt_scores = torch.split(
+                self.model(input_ids=hf_params["inputs"]).logits.squeeze(0).detach(), 1
+            )
+            scores = (None,) + prompt_scores + response.scores[1:]  # type: ignore
+        else:
+            # Remove the prompt from the response
+            start = hf_params["inputs"].size(1)
+            token_ids = response.sequences[0, start:].tolist()  # type: ignore
+            scores = response.scores  # type: ignore
+
         # We assume batch-size is always 1, so we hard-code 0
-        token_ids = response.sequences[0, response_start:].tolist()  # type: ignore
         tokens = [self.tokenizer.decode(t) for t in token_ids]
         result = dict(text="".join(tokens))
         if params.logprobs:
             top_logprobs = []
             token_logprobs = []
-            for t_id, s in zip(token_ids, response.scores[response_start:]):  # type: ignore
-                lps = log_softmax(s[0], dim=-1)
-                token_logprobs.append(sanitize_float(lps[t_id].item()))
-                lps, token_ids = lps.topk(params.logprobs)
-                top_logprobs.append(
-                    {
-                        self.tokenizer.decode(t): sanitize_float(l)
-                        for t, l in zip(token_ids, lps.tolist())
-                    }
-                )
+            for i, (t_id, s) in enumerate(zip(token_ids, scores)):  # type: ignore
+                if params.echo and i == 0:
+                    # Set logprobs to null for the very first token
+                    # (consistent with OpenAI's API)
+                    token_logprobs.append(None)
+                    top_logprobs.append(None)
+                else:
+                    lps = log_softmax(s[0], dim=-1)
+                    token_logprobs.append(sanitize_float(lps[t_id].item()))
+                    lps, token_ids = lps.topk(params.logprobs)
+                    top_logprobs.append(
+                        {
+                            self.tokenizer.decode(t): sanitize_float(l)
+                            for t, l in zip(token_ids, lps.tolist())
+                        }
+                    )
             result["logprobs"] = dict(  # type: ignore
                 tokens=tokens,
                 token_logprobs=token_logprobs,
